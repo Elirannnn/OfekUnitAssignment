@@ -258,15 +258,16 @@ def clean_and_sort_data_with_model(input_file, allocations, unit_weights, model,
 @app.route('/', methods=['GET', 'POST'])
 def index():
     error_message = None
+    success_message = None
     assignments = []
     temp_file_path = None
-    
+
     if request.method == 'POST':
         try:
-            # Create and train the spelling correction model
+            # יצירת מודל תיקון שגיאות
             model, vectorizer = create_spelling_model()
-            
-            # Extract unit weights
+
+            # משקלים לכל יחידה
             unit_weights = {
                 'הנדסה': float(request.form['weight_unit_הנדסה']),
                 'מאב': float(request.form['weight_unit_מאב']),
@@ -277,6 +278,7 @@ def index():
                 'תשתיות': float(request.form['weight_unit_תשתיות'])
             }
 
+            # הקצאות לכל יחידה
             allocations = {
                 'הנדסה': int(request.form['הנדסה']),
                 'מאב': int(request.form['מאב']),
@@ -287,6 +289,7 @@ def index():
                 'תשתיות': int(request.form['תשתיות'])
             }
 
+            # עיבוד קובץ
             file = request.files['file']
             if file:
                 input_file = os.path.join('uploads', file.filename)
@@ -295,12 +298,14 @@ def index():
 
                 try:
                     assignments, temp_file_path = clean_and_sort_data_with_model(
-                        input_file, 
-                        allocations, 
+                        input_file,
+                        allocations,
                         unit_weights,
                         model,
                         vectorizer
                     )
+                    # הצלחה - אם לא נזרקה שגיאה
+                    success_message = "הקובץ עובד בהצלחה!"
                 except ValueError as e:
                     error_message = str(e)
                 except Exception as e:
@@ -308,14 +313,17 @@ def index():
                         error_message = "שיבוץ מקדים - כולל את כל החיילים. אנא וודא שיש חיילים ללא שיבוץ מקדים."
                     else:
                         error_message = f"התרחשה שגיאה: {str(e)}"
-                
-                return render_template('index.html', assignments=assignments, temp_file=temp_file_path, error_message=error_message)
-        
+
         except Exception as e:
             error_message = f"התרחשה שגיאה כללית: {str(e)}"
-            return render_template('index.html', assignments=[], temp_file=None, error_message=error_message)
 
-    return render_template('index.html', assignments=[], temp_file=None, error_message=error_message)
+    return render_template(
+        'index.html',
+        assignments=assignments,
+        temp_file=temp_file_path,
+        error_message=error_message,
+        success_message=success_message
+    )
 
 @app.route('/download', methods=['GET'])
 def download_file():
