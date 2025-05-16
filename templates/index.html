@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='/images/OfekUnit.png') }}" type="image/png">
+    <title>שיבוץ חיילים</title>
+    <style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f8fc;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    direction: rtl;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    text-align: center;
+    color: #004080;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+button {
+    display: inline-block;
+    background-color: #004080;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    padding: 12px 20px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.toggle-form-btn {
+    background-color: #0056b3;
+    margin-bottom: 15px;
+}
+
+form {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #cbd5e0;
+    transition: all 0.3s ease;
+}
+
+form.hidden {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+input[type="file"],
+input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+input[type="file"]::file-selector-button {
+    padding: 10px;
+    background-color: #004080;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background-color: #0056b3;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #e7eef9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.slider-label {
+    font-weight: bold;
+    color: #004080;
+}
+
+input[type="range"] {
+    flex: 1;
+    margin: 0 15px;
+    accent-color: #004080;
+}
+
+.slider-value {
+    font-weight: bold;
+    color: #0056b3;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+th {
+    background-color: #004080;
+    color: #fff;
+    padding: 15px;
+    text-align: right;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #e7eef9;
+    color: #333;
+    font-size: 1rem;
+}
+
+tr:nth-child(even) {
+    background-color: #f9fbfd;
+}
+
+tr:hover {
+    background-color: #e7eef9;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    button {
+        font-size: 0.9rem;
+    }
+
+    table {
+        font-size: 0.9rem;
+    }
+}
+
+    </style>
+    <script>
+        function updateSliderValue(value) {
+    document.getElementById('sliderValue').textContent = value;
+}
+
+function syncSliders() {
+    const masterValue = document.getElementById('weight_unit_master').value;
+    const unitSliders = [
+        'weight_unit_הנדסה', 
+        'weight_unit_מאב', 
+        'weight_unit_מהן', 
+        'weight_unit_מעמ', 
+        'weight_unit_מתן', 
+        'weight_unit_מטס', 
+        'weight_unit_תשתיות'
+    ];
+
+    unitSliders.forEach(sliderId => {
+        document.getElementById(sliderId).value = masterValue;
+        updateUnitSliderValue(sliderId);
+    });
+}
+
+function updateUnitSliderValue(sliderId) {
+    const slider = document.getElementById(sliderId);
+    const valueSpanId = sliderId + '_value';
+    document.getElementById(valueSpanId).textContent = slider.value;
+}
+
+function toggleForm() {
+    const form = document.getElementById('mainForm');
+    const toggleBtn = document.getElementById('toggleFormBtn');
+    
+    form.classList.toggle('hidden');
+    
+    toggleBtn.textContent = form.classList.contains('hidden') 
+        ? 'הצג טופס' 
+        : 'הסתר טופס';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // שחזור ערכים מ-localStorage
+    restoreFormValues();
+
+    const form = document.getElementById('mainForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.addEventListener('click', function() {
+        // שמירת ערכי טופס ב-localStorage לפני שליחה
+        saveFormValues();
+        
+        // הסתרת הטופס
+        setTimeout(toggleForm, 100);
+    });
+});
+
+function saveFormValues() {
+    // שמירת ערכי slider ראשי
+    localStorage.setItem('weight_unit_master', document.getElementById('weight_unit_master').value);
+
+    // שמירת ערכי slider יחידות
+    const units = ['הנדסה', 'מאב', 'מהן', 'מעמ', 'מתן', 'מטס', 'תשתיות'];
+    units.forEach(unit => {
+        localStorage.setItem(`weight_unit_${unit}`, document.getElementById(`weight_unit_${unit}`).value);
+        localStorage.setItem(`${unit}_input`, document.querySelector(`input[name="${unit}"]`).value);
+    });
+}
+
+function restoreFormValues() {
+    // שחזור ערך slider ראשי
+    const masterValue = localStorage.getItem('weight_unit_master');
+    if (masterValue) {
+        document.getElementById('weight_unit_master').value = masterValue;
+    }
+
+    // שחזור ערכי slider יחידות
+    const units = ['הנדסה', 'מאב', 'מהן', 'מעמ', 'מתן', 'מטס', 'תשתיות'];
+    units.forEach(unit => {
+        const unitSliderValue = localStorage.getItem(`weight_unit_${unit}`);
+        const unitInputValue = localStorage.getItem(`${unit}_input`);
+
+        if (unitSliderValue) {
+            const slider = document.getElementById(`weight_unit_${unit}`);
+            slider.value = unitSliderValue;
+            updateUnitSliderValue(`weight_unit_${unit}`);
+        }
+
+        if (unitInputValue) {
+            document.querySelector(`input[name="${unit}"]`).value = unitInputValue;
+        }
+    });
+}
+    </script>
+</head>
+<body>
+    <h1>שיבוץ חיילים ליחידות</h1>
+    <div style="position: fixed; top: 20px; right: 20px; width: 150px; text-align: center; z-index: 1000;">
+        <img src="{{ url_for('static', filename='images/OfekUnit.png') }}" alt="יחידת אופק" style="max-width: 100%; max-height: 100px; object-fit: contain;">
+        <div style="margin-top: 5px; font-weight: bold; color: #1a3b5c; font-size: 18px; letter-spacing: 2px;">אופק 324</div>
+    </div>
+    <button id="toggleFormBtn" class="toggle-form-btn" onclick="toggleForm()">הסתר טופס</button>
+    
+    <form id="mainForm" method="POST" enctype="multipart/form-data">
+        <!-- Master synchronization slider -->
+        <div class="slider-container">
+            <label class="slider-label" for="weight_unit_master">סנכרון אחוזי השפעה:</label>
+            <input type="range" id="weight_unit_master" min="0" max="100" value="80" oninput="syncSliders()">
+            <button type="button" onclick="syncSliders()">סנכרן</button>
+        </div>
+
+        <!-- Individual unit sliders -->
+        {% for unit in ['הנדסה', 'מאב', 'מהן', 'מעמ', 'מתן', 'מטס', 'תשתיות'] %}
+        <div class="slider-container">
+            <label class="slider-label" for="weight_unit_{{ unit }}">אחוז השפעה ל-{{ unit }}:</label>
+            <input type="range" id="weight_unit_{{ unit }}" name="weight_unit_{{ unit }}" min="0" max="100" 
+                   value="80" oninput="updateUnitSliderValue('weight_unit_{{ unit }}')">
+            <span class="slider-value" id="weight_unit_{{ unit }}_value">80</span>%
+        </div>
+        {% endfor %}
+
+        <label for="file">בחר קובץ:</label>
+        <input type="file" name="file" required><br><br>
+
+        {% for unit in ['הנדסה', 'מאב', 'מהן', 'מעמ', 'מתן', 'מטס', 'תשתיות'] %}
+        <label for="{{ unit }}">{{ unit }}:</label>
+        <input type="number" name="{{ unit }}" min="0" required><br><br>
+        {% endfor %}
+
+        <button type="submit">התחל עיבוד</button>
+    </form>
+
+    {% if assignments %}
+        <h2>תוצאות השיבוץ האופטימלי</h2>
+        <table>
+            <tr>
+                <th>שם החייל</th>
+                <th>עיר מגורים</th>
+                <th>יחידה</th>
+                <th>דירוג חייל</th>
+                <th>דירוג יחידה</th>
+                <th>אחוז השפעה יחידה</th>
+                <th>אחוז השפעה חייל</th>
+                <th>ממוצע (חייל+יחידה)</th>
+                <th>ממוצע יחידה</th>
+            </tr>
+            {% for assignment in assignments %}
+            <tr>
+                <td>{{ assignment['שם החייל'] }}</td>
+                <td>{{ assignment['עיר מגורים'] }}</td>
+                <td>{{ assignment['יחידה'] }}</td>
+                <td>{{ assignment['דירוג החייל'] }}</td>
+                <td>{{ assignment['דירוג היחידה'] }}</td>
+                <td>{{ assignment['אחוז השפעה יחידה'] }}%</td>
+                <td>{{ assignment['אחוז השפעה חייל'] }}%</td>
+                <td>{{ "%.2f"|format(assignment['ממוצע']) }}</td>
+                <td>{{ "%.2f"|format(assignment['ממוצע יחידה']) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <a href="{{ url_for('download_file', path=temp_file) }}">
+            <button>הורד קובץ אקסל</button>
+        </a>
+    {% endif %}
+</body>
+</html>
