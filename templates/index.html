@@ -16,7 +16,70 @@ body {
     max-width: 1200px;
     margin: 0 auto;
 }
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    visibility: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
 
+.popup-overlay.active {
+    visibility: visible;
+    opacity: 1;
+}
+
+.error-popup {
+    background-color: #fff;
+    color: #333;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+    position: relative;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+
+.popup-overlay.active .error-popup {
+    transform: translateY(0);
+}
+
+.error-popup h3 {
+    color: #e74c3c;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.error-popup p {
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.close-popup {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.close-popup:hover {
+    background-color: #c0392b;
+}
 h1 {
     text-align: center;
     color: #004080;
@@ -181,7 +244,83 @@ tr:hover {
         function updateSliderValue(value) {
     document.getElementById('sliderValue').textContent = value;
 }
+function showErrorPopup(message) {
+    // בדיקה אם הפופאפ כבר קיים
+    let popupOverlay = document.getElementById('errorPopupOverlay');
+    
+    // אם לא, יוצרים אותו
+    if (!popupOverlay) {
+        popupOverlay = document.createElement('div');
+        popupOverlay.id = 'errorPopupOverlay';
+        popupOverlay.className = 'popup-overlay';
+        
+        const popupContent = document.createElement('div');
+        popupContent.className = 'error-popup';
+        
+        const title = document.createElement('h3');
+        title.textContent = 'שגיאה';
+        
+        const errorMessage = document.createElement('p');
+        errorMessage.id = 'errorPopupMessage';
+        
+        const closeButton = document.createElement('button');
+        closeButton.className = 'close-popup';
+        closeButton.textContent = 'סגור';
+        closeButton.onclick = closeErrorPopup;
+        
+        popupContent.appendChild(title);
+        popupContent.appendChild(errorMessage);
+        popupContent.appendChild(closeButton);
+        popupOverlay.appendChild(popupContent);
+        
+        document.body.appendChild(popupOverlay);
+    }
+    
+    // עדכון הודעת השגיאה
+    document.getElementById('errorPopupMessage').textContent = message;
+    
+    // הצגת הפופאפ
+    setTimeout(() => {
+        popupOverlay.classList.add('active');
+    }, 10);
+}
 
+// פונקציה לסגירת פופאפ השגיאה
+function closeErrorPopup() {
+    const popupOverlay = document.getElementById('errorPopupOverlay');
+    if (popupOverlay) {
+        popupOverlay.classList.remove('active');
+    }
+}
+
+// פונקציה שתקרא בעת טעינת העמוד לבדיקה אם יש שגיאה להציג
+function checkForErrors() {
+    // בדיקה אם יש הודעת שגיאה בסשן
+    const errorMessage = '{{ error_message }}';
+    if (errorMessage && errorMessage !== 'None') {
+        showErrorPopup(errorMessage);
+    }
+}
+
+// הוספת הפונקציה לאירוע טעינת הדף
+document.addEventListener('DOMContentLoaded', function() {
+    // שחזור ערכים מ-localStorage
+    restoreFormValues();
+    
+    // בדיקת שגיאות
+    checkForErrors();
+
+    const form = document.getElementById('mainForm');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    submitBtn.addEventListener('click', function() {
+        // שמירת ערכי טופס ב-localStorage לפני שליחה
+        saveFormValues();
+        
+        // הסתרת הטופס
+        setTimeout(toggleForm, 100);
+    });
+});
 function syncSliders() {
     const masterValue = document.getElementById('weight_unit_master').value;
     const unitSliders = [
@@ -272,6 +411,13 @@ function restoreFormValues() {
     </script>
 </head>
 <body>
+    <div id="errorPopupOverlay" class="popup-overlay {% if error_message %}active{% endif %}">
+        <div class="error-popup">
+            <h3>שגיאה</h3>
+            <p id="errorPopupMessage">{{ error_message }}</p>
+            <button class="close-popup" onclick="closeErrorPopup()">סגור</button>
+        </div>
+    </div>
     <h1>שיבוץ חיילים ליחידות</h1>
     <div style="position: fixed; top: 20px; right: 20px; width: 150px; text-align: center; z-index: 1000;">
         <img src="{{ url_for('static', filename='images/OfekUnit.png') }}" alt="יחידת אופק" style="max-width: 100%; max-height: 100px; object-fit: contain;">
@@ -307,7 +453,6 @@ function restoreFormValues() {
 
         <button type="submit">התחל עיבוד</button>
     </form>
-
     {% if assignments %}
         <h2>תוצאות השיבוץ האופטימלי</h2>
         <table>
